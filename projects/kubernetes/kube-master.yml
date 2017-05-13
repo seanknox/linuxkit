@@ -30,7 +30,7 @@ onboot:
      - CAP_SYS_ADMIN
      - CAP_MKNOD
   - name: mounts
-    image: "linuxkit/kubernetes:latest-mounts"
+    image: "seanknox/linuxkit-kubernetes:latest-mounts"
     capabilities:
      - all
     pid: host
@@ -91,15 +91,15 @@ services:
      - /opt/cni:/opt/cni:rshared,rbind
     rootfsPropagation: shared
   - name: kubernetes-image-cache-common
-    image: "linuxkit/kubernetes:latest-image-cache-common"
+    image: "seanknox/linuxkit-kubernetes:latest-image-cache-common"
     binds:
       - /var/run:/var/run
   - name: kubernetes-image-cache-control-plane
-    image: "linuxkit/kubernetes:latest-image-cache-control-plane"
+    image: "seanknox/linuxkit-kubernetes:latest-image-cache-control-plane"
     binds:
       - /var/run:/var/run
   - name: kubelet
-    image: "linuxkit/kubernetes:latest"
+    image: "seanknox/linuxkit-kubernetes:latest"
     capabilities:
      - all
     net: host
@@ -116,7 +116,7 @@ services:
     rootfsPropagation: shared
 files:
   - path: root/.ssh/authorized_keys
-    contents: '# Your ssh key goes here'
+    contents: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC6uOO11vvGvutWtOpH5yiIObt59oDiAHdO9Aji1a3Ha6QVGNgmegIfWHiJHztnqSrCcQg8T4TWfV/wCaP3b54wCJTMuuNpdgXUaDB8lckPK8fR9ujvcEFuU0ujMplzLsmCsZ0VLIltKIvScfVJyZsyi0f08g+BocVMtYOi9HDrP+Q0thLaIGCxdE9d68DjGoZtgou8q4v2UudlW9Ci4DLg4vq3gfkMnP5O1WEP11uTj7sPHi4qtkeRxo6SbyElwF/uDCJw/z6EtSsjdbmFQ1AYjMhw3KV6DVBm/kVCPsnGLPjaxRDUin2+7Owhb/EORfNs+H4jcNXjzdlAMoLuBH1l5C0gPSM4PScy4hnYsj7cYKCmypw7WMhVHv7WhMds66iuucJ4zwfIeLOoGldhDrJq81l5ZGsNLuXLWnFZ/cT0Ehj70B2XRaZ9m7Rzqdw/E0vNur+7sy6e1l/aMfi2DJm5DSahUSJgejXn4iw/9DjUEosun2PiXcBpMQELoFAx3hZeNwGojKqNx4qsiQ3sTVbwDZBvxEA3Xox8P0BL/11YDc90BG4hKulNo61J1JzBd+dGcGkLZHD6oSMgd1wVvLsBfdxHpurGhcVRHxZ8ovHwzS8v6VbcAdQqTrgFtYJr9HQtj8+fYBONUWINII143HbUDgbXd5IQEgh9W50gKjPnnw== seknox@greentara.guest.corp.microsoft.com'
   - {path: etc/cni, directory: true}
   - {path: opt/cni, directory: true}
 outputs:

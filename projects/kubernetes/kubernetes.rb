@@ -1,53 +1,54 @@
 import 'common.rb'
 
-from "alpine:edge"
+from 'alpine:edge'
 
 def install_node_dependencies
   kube_release_artefacts = "https://dl.k8s.io/#{@versions[:kubernetes]}/bin/linux/amd64"
   cni_release_artefacts = "https://dl.k8s.io/network-plugins/cni-amd64-#{@versions[:cni]}.tar.gz"
-  weave_launcher = "https://cloud.weave.works/k8s/v1.6/net?v=#{@versions[:weave]}"
+  helm_release_artefacts = "https://storage.googleapis.com/kubernetes-helm/helm-#{@versions[:helm]}-linux-amd64.tar.gz"
 
   download_files = [
-    '/etc/weave.yaml' => {
-      url: weave_launcher,
-      mode: '0644',
-    },
     '/tmp/cni.tgz' => {
       url: cni_release_artefacts,
-      mode: '0644',
+      mode: '0644'
     },
     '/usr/bin/kubelet' => {
       url: "#{kube_release_artefacts}/kubelet",
-      mode: '0755',
+      mode: '0755'
     },
     '/usr/bin/kubeadm' => {
       url: "#{kube_release_artefacts}/kubeadm",
-      mode: '0755',
+      mode: '0755'
     },
     '/usr/bin/kubectl' => {
       url: "#{kube_release_artefacts}/kubectl",
-      mode: '0755',
+      mode: '0755'
     },
+    '/tmp/helm.tgz' => {
+      url: helm_release_artefacts,
+      mode: '0644'
+    }
   ]
 
   download_files.each do |file|
-    file.each do |dest,info|
+    file.each do |dest, info|
       run %(curl --output "#{dest}" --fail --silent --location "#{info[:url]}")
       run %(chmod "#{info[:mode]}" "#{dest}")
     end
   end
 
-  run "mkdir -p /opt/cni/bin /etc/cni/net.d && tar xzf /tmp/cni.tgz -C /opt/cni && rm -f /tmp/cni.tgz"
+  run 'mkdir -p /opt/cni/bin /etc/cni/net.d && tar xzf /tmp/cni.tgz -C /opt/cni && rm -f /tmp/cni.tgz'
+  run 'tar xzf /tmp/helm.tgz && mv linux-amd64/helm /usr/bin && rm -rf /tmp/helm.tgz linux-amd64'
 end
 
 def kubelet_cmd
   %w(
     kubelet
-      --kubeconfig=/var/lib/kubeadm/kubelet.conf --require-kubeconfig=true
-      --pod-manifest-path=/var/lib/kubeadm/manifests --allow-privileged=true
-      --cluster-dns=10.96.0.10 --cluster-domain=cluster.local
-      --cgroups-per-qos=false --enforce-node-allocatable=""
-      --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin
+    --kubeconfig=/var/lib/kubeadm/kubelet.conf --require-kubeconfig=true
+    --pod-manifest-path=/var/lib/kubeadm/manifests --allow-privileged=true
+    --cluster-dns=10.96.0.10 --cluster-domain=cluster.local
+    --cgroups-per-qos=false --enforce-node-allocatable=""
+    --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin
   )
 end
 
@@ -57,8 +58,8 @@ install_node_dependencies
 
 # Exploit shared mounts, give CNI paths back to the host
 mount_cni_dirs = [
-  mount_bind("/opt/cni", "/rootfs/opt/cni"),
-  mount_bind("/etc/cni", "/rootfs/etc/cni"),
+  mount_bind('/opt/cni', '/rootfs/opt/cni'),
+  mount_bind('/etc/cni', '/rootfs/etc/cni')
 ]
 
 # At the moment we trigger `kubeadm init` manually on the master, then start nodes which expect `kubeadm join` args in metadata volume
@@ -66,11 +67,11 @@ wait_for_node_metadata_or_sleep_until_master_init = "[ ! -e /dev/sr0 ] && sleep 
 
 create_shell_wrapper "#{mount_cni_dirs.join(' && ')} && until #{kubelet_cmd.join(' ')} ; do #{wait_for_node_metadata_or_sleep_until_master_init} ; done", '/usr/bin/kubelet.sh'
 
-create_shell_wrapper "kubeadm init --skip-preflight-checks --kubernetes-version #{@versions[:kubernetes]} && kubectl create -n kube-system -f /etc/weave.yaml", '/usr/bin/kubeadm-init.sh'
+create_shell_wrapper "kubeadm init --skip-preflight-checks --kubernetes-version #{@versions[:kubernetes]}", '/usr/bin/kubeadm-init.sh'
 
 flatten
 
-env KUBECONFIG: "/etc/kubernetes/admin.conf"
+env KUBECONFIG: '/etc/kubernetes/admin.conf'
 
 set_exec entrypoint: %w(kubelet.sh)
 
